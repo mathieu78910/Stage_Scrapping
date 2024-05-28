@@ -1,42 +1,74 @@
 import puppeteer from "puppeteer";
 
+// Fonction pour récupérer les titres et les liens des articles
 async function fetchBlogTitles(url) {
-  // Launch the browser and open a new blank page
+  // Lancer le navigateur et ouvrir une nouvelle page
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
-  // Navigate the page to the URL
-  await page.goto(url);
+  // Naviguer vers l'URL spécifiée et attendre que le réseau soit inactif
+  await page.goto(url, { waitUntil: 'networkidle2' });
 
-  // Wait for the articles to load
-  const t = await page.waitForSelector(".gridlove-posts");
+  // Attendre que les articles soient chargés
+  await page.waitForSelector(".gridlove-posts");
 
-  // // Extract the titles of the articles
-  // const titles = await page.evaluate(() => {
-  //   // Select all elements with the class 'post-title' and map their text content
-  //   return Array.from(document.querySelectorAll(".article")).map((element) =>
-  //     element.textContent.trim()
-  //   );
-  // });
+  // Extraire les titres et les liens des articles
+  const articles = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll(".gridlove-posts .entry-title a")).map(element => ({
+      title: element.textContent.trim(),
+      link: element.href
+    }));
+  });
 
-  console.log(t, "ijgkhg")
-
-  
-
-  // Close the browser
+  // Fermer le navigateur
   await browser.close();
 
-  // // Return the extracted titles
-  // return titles;
+  // Retourner les titres et les liens extraits
+  return articles;
 }
 
-(async () => {
-  const url =
-    "https://www.codeur.com/blog/developpement/intelligence-artificielle/";
-  const titles = await fetchBlogTitles(url);
+// Fonction pour récupérer le contenu de chaque article
+async function fetchBlogContent(articlesArray) {
+  const browser = await puppeteer.launch();
+  let result = [];
 
-  // console.log("titreBlog");
-  // titles.forEach((title, index) => {
-  //   console.log(`${index + 1}. ${title}`);
-  // });
+  // Boucler dans le tableau des articles
+  for (let article of articlesArray) {
+    const page = await browser.newPage();
+    
+    // Accéder à l'URL de l'article
+    await page.goto(article.link, { waitUntil: 'networkidle2' });
+
+    // Extraire le texte du deuxième élément .entry-content
+    const content = await page.evaluate(() => {
+      const contentElements = document.querySelectorAll(".entry-content");
+      return contentElements.length > 1 ? contentElements[1].textContent.trim() : "";
+    });
+
+    // Ajouter l'objet avec le titre et le contenu dans le résultat
+    result.push({
+      title: article.title,
+      link: article.link,
+      content: content
+    });
+
+    await page.close(); // Fermer la page après extraction
+  }
+
+  await browser.close();
+
+  // Retourner le résultat
+  return result;
+}
+
+// Fonction principale pour exécuter le script
+(async () => {
+  const url = "https://www.codeur.com/blog/developpement/intelligence-artificielle/";
+  const articles = await fetchBlogTitles(url);
+
+  // Récupérer le contenu de chaque article
+  const articlesContent = await fetchBlogContent(articles);
+
+  // Afficher les titres et les contenus dans la console
+  console.log(articlesContent);
 })();
