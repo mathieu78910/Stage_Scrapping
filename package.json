@@ -4,6 +4,8 @@
   "main": "index.js",
   "type": "module",
   "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "dotenv": "^16.4.5",
     "puppeteer": "^22.10.0"
   },
   "scripts": {
@@ -12,5 +14,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "prisma": "^5.14.0"
+  }
 }
